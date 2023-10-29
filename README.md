@@ -28,4 +28,4 @@ The script will send feedback messages to buyers based on the specified options.
 Please note that the program relies on environment variables for the Ebay Api. Make sure to set these variables in a .env file in the same directory as the script.
 
 ## Note
-You can provide a list of buyer names to skip in the "skip_names.txt" file or throught the command line if needed.
+You can provide a list of buyers names to skip in the "skip_names.txt" file or through the command line if needed.
