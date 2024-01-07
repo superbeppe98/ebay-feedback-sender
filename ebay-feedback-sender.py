@@ -38,17 +38,21 @@ names_to_skip = set(args.skip_names)
 # Calculate the start and end dates based on the custom month
 if args.custom_month:
     current_date = datetime.now()
-    custom_year = current_date.year
     custom_month = args.custom_month
 
     # Calculate the number of days in the selected month
-    last_day_of_month = calendar.monthrange(custom_year, custom_month)[1]
+    last_day_of_month = calendar.monthrange(current_date.year, custom_month)[1]
 
     # Set the start date as the first day of the selected month
-    start_date = datetime(custom_year, custom_month, 1)
+    start_date = datetime(current_date.year, custom_month, 1)
 
     # Set the end date as the last day of the selected month
-    end_date = datetime(custom_year, custom_month, last_day_of_month)
+    end_date = datetime(current_date.year, custom_month, last_day_of_month)
+
+    # Adjust the year if the selected month is December
+    if custom_month == 12:
+        start_date = start_date.replace(year=current_date.year - 1)
+        end_date = end_date.replace(year=current_date.year - 1)
 
 # Determine the language based on the selected option
 if args.language == 'english':
@@ -102,6 +106,7 @@ completed_orders = response.dict()['OrderArray']['Order']
 # Calculate the selected month and year
 selected_month_name = start_date.strftime('%B')
 selected_year = start_date.year
+
 
 # Add the month and year to the "Number of orders found" message
 print(
