@@ -2,7 +2,6 @@ import calendar
 import locale
 from datetime import datetime
 from ebaysdk.trading import Connection
-from pprint import pprint
 import os
 import argparse
 from dotenv import load_dotenv
@@ -56,14 +55,11 @@ if args.custom_month:
 
 # Determine the language based on the selected option
 if args.language == 'english':
-    message_body = "Hello, I noticed that you haven't left feedback for your recent purchase. We value your feedback and would appreciate it if you could share your experience with us. If you have any questions or concerns, please feel free to reach out to us. Thank you, BMS!"
-    subject = "Feedback Request from eBay Seller BeppeMokikaShop"
-    locale.setlocale(locale.LC_TIME, 'en_US.utf8')
+    message_body = "Hello, this is an automated message. I noticed that you haven't left feedback for your recent purchase. We value your feedback and would appreciate it if you could share your experience with us. If you have any questions or concerns, please feel free to reach out to us. Thank you, BMS!"
+    subject = "Automated Feedback Request from eBay Seller BeppeMokikaShop"
 elif args.language == 'italian':
-    message_body = "Ciao, ho notato che non hai ancora lasciato un feedback per il tuo acquisto recente. Valutiamo molto il tuo feedback e saremmo grati se volessi condividere la tua esperienza con noi. Se hai domande o dubbi, non esitare a contattarci. Grazie, BMS!"
-    subject = "Richiesta di Feedback da parte del Venditore eBay BeppeMokikaShop"
-    locale.setlocale(locale.LC_TIME, 'it_IT.utf8')
-# Now you have the variables `message_body` and `subject` set in the desired language.
+    message_body = "Ciao, questo è un messaggio automatico. Ho notato che non hai ancora lasciato un feedback per il tuo acquisto recente. Valutiamo molto il tuo feedback e saremmo grati se volessi condividere la tua esperienza con noi. Se hai domande o dubbi, non esitare a contattarci. Grazie, BMS!"
+    subject = "Richiesta di Feedback Automatica da parte del Venditore eBay BeppeMokikaShop"
 
 # Load environment variables from .env file
 load_dotenv()
@@ -107,7 +103,6 @@ completed_orders = response.dict()['OrderArray']['Order']
 selected_month_name = start_date.strftime('%B')
 selected_year = start_date.year
 
-
 # Add the month and year to the "Number of orders found" message
 print(
     f"Number of orders found in {selected_month_name} {selected_year}: {len(completed_orders)}")
@@ -115,18 +110,23 @@ print(
 # Initialize a variable to keep track of the total feedback count
 total_feedback_count = 0
 
-# Initialize a list to store users when there's no FeedbackDetailArray
-users_without_feedback = []
+# Initialize a list to store orders with their creation time and titles
+orders_with_time_and_title = []
 
 # Iterate through completed orders and check feedback for each item
 for order in completed_orders:
+    # Check if the order status is 'Cancelled' or 'Pending'
+    if order['OrderStatus'] in ['Cancelled']:
+        print(f"Skipping order {order['OrderID']} (Status: {order['OrderStatus']})")
+        continue  # Skip the canceled or pending order
+
     buyer_user_id = order['BuyerUserID']
-    order_creation_time = order['CreatedTime']  # Data di creazione dell'ordine
+    order_creation_time = order['CreatedTime']  # Order creation time
     order_creation_date = datetime.strptime(
         order_creation_time, '%Y-%m-%dT%H:%M:%S.%fZ')
     date_and_time = order_creation_date.strftime('%d %B %Y %H:%M:%S')
 
-    # Check if the buyer's name is in the set of names to skip
+    # Skip feedback for names in the skip list
     if buyer_user_id in names_to_skip:
         print(
             f"Skipping feedback for {buyer_user_id} (name is in the skip list)")
@@ -140,7 +140,10 @@ for order in completed_orders:
 
     for transaction in transactions:
         item_id = transaction['Item']['ItemID']
-        item_title = transaction['Item']['Title']  # Nome dell'inserzione
+        item_title = transaction['Item']['Title']  # Item name
+
+        # Store order creation time and item title
+        orders_with_time_and_title.append((order_creation_date, item_title))
 
         # Create filters for GetFeedback request
         feedback_filters = {
@@ -155,8 +158,6 @@ for order in completed_orders:
 
         # Check if there is no feedback for this item
         if 'FeedbackDetailArray' not in feedback_info:
-            users_without_feedback.append(buyer_user_id)
-
             # Create a request to send the message
             message_request = {
                 'ItemID': item_id,
@@ -170,8 +171,8 @@ for order in completed_orders:
             }
 
             # Execute the request to send the message
-            response = api.execute(
-                'AddMemberMessageAAQToPartner', message_request)
+            #response = api.execute(
+            #    'AddMemberMessageAAQToPartner', message_request)
 
             # Check the response to verify if the message was sent successfully
             if response.reply.Ack == 'Success':
@@ -180,3 +181,11 @@ for order in completed_orders:
             else:
                 print(
                     f"There was an error sending the message to {buyer_user_id} for Item ID {item_id} {item_title} on {date_and_time}")
+
+# Sort the orders by creation time (the first element of the tuple)
+orders_with_time_and_title.sort(key=lambda x: x[0])
+
+# Write the sorted orders to a file, excluding canceled and pending orders
+with open('orders_name.txt', 'w') as file:
+    for order in orders_with_time_and_title:
+        file.write(f"{order[1]}\n")
