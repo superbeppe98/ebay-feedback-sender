@@ -171,8 +171,8 @@ for order in completed_orders:
             }
 
             # Execute the request to send the message
-            #response = api.execute(
-            #    'AddMemberMessageAAQToPartner', message_request)
+            response = api.execute(
+                'AddMemberMessageAAQToPartner', message_request)
 
             # Check the response to verify if the message was sent successfully
             if response.reply.Ack == 'Success':
