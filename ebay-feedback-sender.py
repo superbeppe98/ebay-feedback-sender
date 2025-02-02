@@ -55,10 +55,10 @@ if args.custom_month:
 
 # Determine the language based on the selected option
 if args.language == 'english':
-    message_body = "Hello, this is an automated message. I noticed that you haven't left feedback for your recent purchase. We value your feedback and would appreciate it if you could share your experience with us. If you have any questions or concerns, please feel free to reach out to us. Thank you, BMS!"
+    message_body = "Hello, this is an automated message. I noticed that you haven't left feedback for your recent purchase. We value your feedback and would appreciate it if you could share your experience with us. If you have any questions or concerns, please feel free to reach out to us. Thank you, BMS Team!"
     subject = "Automated Feedback Request from eBay Seller BeppeMokikaShop"
 elif args.language == 'italian':
-    message_body = "Ciao, questo è un messaggio automatico. Ho notato che non hai ancora lasciato un feedback per il tuo acquisto recente. Valutiamo molto il tuo feedback e saremmo grati se volessi condividere la tua esperienza con noi. Se hai domande o dubbi, non esitare a contattarci. Grazie, BMS!"
+    message_body = "Ciao, questo è un messaggio automatico. Ho notato che non hai ancora lasciato un feedback per il tuo acquisto recente. Valutiamo molto il tuo feedback e saremmo grati se volessi condividere la tua esperienza con noi. Se hai domande o dubbi, non esitare a contattarci. Grazie, Il Team di BMS!"
     subject = "Richiesta di Feedback Automatica da parte del Venditore eBay BeppeMokikaShop"
 
 # Load environment variables from .env file
