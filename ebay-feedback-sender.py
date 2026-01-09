@@ -14,7 +14,8 @@ default_month = current_month - 1 if current_month > 1 else 12
 
 # Initialize argument parser
 parser = argparse.ArgumentParser(
-    description="Send messages to eBay buyers with the option to select the language or skip feedback for certain names.")
+    description="Send messages to eBay buyers with the option to select the language or skip feedback for certain names."
+)
 
 # Add an option to select the language
 parser.add_argument('--language', choices=['english', 'italian'], default='english',
@@ -34,26 +35,26 @@ args = parser.parse_args()
 # Convert the list of names to skip to a set for efficient lookup
 names_to_skip = set(args.skip_names)
 
+# -----------------------------
 # Calculate the start and end dates based on the custom month
-if args.custom_month:
-    current_date = datetime.now()
-    custom_month = args.custom_month
+# -----------------------------
+current_date = datetime.now()
+custom_month = args.custom_month
 
-    # Calculate the number of days in the selected month
-    last_day_of_month = calendar.monthrange(current_date.year, custom_month)[1]
+# Determine the correct year
+# If the custom month is after the current month, it must belong to the previous year
+year_for_search = current_date.year - 1 if custom_month > current_date.month else current_date.year
 
-    # Set the start date as the first day of the selected month
-    start_date = datetime(current_date.year, custom_month, 1)
+# Get the last day of the custom month
+last_day_of_month = calendar.monthrange(year_for_search, custom_month)[1]
 
-    # Set the end date as the last day of the selected month
-    end_date = datetime(current_date.year, custom_month, last_day_of_month)
+# Set start and end dates
+start_date = datetime(year_for_search, custom_month, 1)
+end_date = datetime(year_for_search, custom_month, last_day_of_month)
 
-    # Adjust the year if the selected month is December
-    if custom_month == 12:
-        start_date = start_date.replace(year=current_date.year - 1)
-        end_date = end_date.replace(year=current_date.year - 1)
-
+# -----------------------------
 # Determine the language based on the selected option
+# -----------------------------
 if args.language == 'english':
     message_body = "Hello, this is an automated message. I noticed that you haven't left feedback for your recent purchase. We value your feedback and would appreciate it if you could share your experience with us. If you have any questions or concerns, please feel free to reach out to us. Thank you, BMS Team!"
     subject = "Automated Feedback Request from eBay Seller BeppeMokikaShop"
@@ -66,7 +67,7 @@ load_dotenv()
 
 # Read names to skip from a file
 with open('skip_names.txt', 'r') as file:
-    names_to_skip = set(file.read().splitlines())
+    names_to_skip.update(file.read().splitlines())
 
 # Format the dates in a format compatible with eBay requests
 start_date_str = start_date.strftime('%Y-%m-%dT00:00:00.000Z')
@@ -104,32 +105,26 @@ selected_month_name = start_date.strftime('%B')
 selected_year = start_date.year
 
 # Add the month and year to the "Number of orders found" message
-print(
-    f"Number of orders found in {selected_month_name} {selected_year}: {len(completed_orders)}")
-
-# Initialize a variable to keep track of the total feedback count
-total_feedback_count = 0
+print(f"Number of orders found in {selected_month_name} {selected_year}: {len(completed_orders)}")
 
 # Initialize a list to store orders with their creation time and titles
 orders_with_time_and_title = []
 
 # Iterate through completed orders and check feedback for each item
 for order in completed_orders:
-    # Check if the order status is 'Cancelled' or 'Pending'
+    # Skip canceled orders
     if order['OrderStatus'] in ['Cancelled']:
         print(f"Skipping order {order['OrderID']} (Status: {order['OrderStatus']})")
-        continue  # Skip the canceled or pending order
+        continue
 
     buyer_user_id = order['BuyerUserID']
     order_creation_time = order['CreatedTime']  # Order creation time
-    order_creation_date = datetime.strptime(
-        order_creation_time, '%Y-%m-%dT%H:%M:%S.%fZ')
+    order_creation_date = datetime.strptime(order_creation_time, '%Y-%m-%dT%H:%M:%S.%fZ')
     date_and_time = order_creation_date.strftime('%d %B %Y %H:%M:%S')
 
     # Skip feedback for names in the skip list
     if buyer_user_id in names_to_skip:
-        print(
-            f"Skipping feedback for {buyer_user_id} (name is in the skip list)")
+        print(f"Skipping feedback for {buyer_user_id} (name is in the skip list)")
         continue
 
     # Check if there are multiple transactions in the order
@@ -171,21 +166,18 @@ for order in completed_orders:
             }
 
             # Execute the request to send the message
-            response = api.execute(
-                'AddMemberMessageAAQToPartner', message_request)
+            response = api.execute('AddMemberMessageAAQToPartner', message_request)
 
             # Check the response to verify if the message was sent successfully
             if response.reply.Ack == 'Success':
-                print(
-                    f"Message sent successfully to {buyer_user_id} for Item ID {item_id} {item_title} on {date_and_time}")
+                print(f"Message sent successfully to {buyer_user_id} for Item ID {item_id} {item_title} on {date_and_time}")
             else:
-                print(
-                    f"There was an error sending the message to {buyer_user_id} for Item ID {item_id} {item_title} on {date_and_time}")
+                print(f"There was an error sending the message to {buyer_user_id} for Item ID {item_id} {item_title} on {date_and_time}")
 
 # Sort the orders by creation time (the first element of the tuple)
 orders_with_time_and_title.sort(key=lambda x: x[0])
 
-# Write the sorted orders to a file, excluding canceled and pending orders
+# Write the sorted orders to a file, excluding canceled orders
 with open('orders_name.txt', 'w') as file:
     for order in orders_with_time_and_title:
         file.write(f"{order[1]}\n")
